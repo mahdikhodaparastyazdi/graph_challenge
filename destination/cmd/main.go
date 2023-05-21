@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -16,7 +15,6 @@ func main() {
 	fmt.Println("Press enter to exit.")
 	fmt.Scanln()
 }
-
 func startServer() {
 	// Listen for incoming connections
 	listener, err := net.Listen("tcp", "localhost:8888") // Replace with the desired listening address and port
@@ -49,18 +47,26 @@ func startServer() {
 func handleConnection(conn net.Conn, totalSize *int64, count *int, mu *sync.Mutex) {
 	defer conn.Close()
 
-	log.Printf("New connection from %s", conn.RemoteAddr())
+	//log.Printf("New connection from %s", conn.RemoteAddr())
 
 	// Read incoming data from the connection
-	reader := bufio.NewReader(conn)
-	payload, err := reader.ReadBytes('\n')
+	//reader := bufio.NewReader(conn)
+	//payload, err := reader.ReadBytes('\n')
+	//if err != nil {
+	//	log.Printf("Failed to read data from connection: %v", err)
+	//	return
+	//}
+
+	buffer := make([]byte, 4096) // Create a buffer to store the received data
+	n, err := conn.Read(buffer)
 	if err != nil {
-		log.Printf("Failed to read data from connection: %v", err)
+		//fmt.Println("Failed to read data:", err)
 		return
 	}
 
+	payload := buffer[:n]
 	// Log the received payload
-	log.Printf("Received payload: %s", payload)
+	//log.Printf("Received payload: %s", payload)
 
 	// Update the total size and count
 	payloadSize := int64(len(payload))
@@ -70,4 +76,8 @@ func handleConnection(conn net.Conn, totalSize *int64, count *int, mu *sync.Mute
 	mu.Unlock()
 
 	log.Printf("Total Size: %d, Count: %d", *totalSize, *count)
+	if *count > 10100 {
+		*totalSize = 0
+		*count = 0
+	}
 }

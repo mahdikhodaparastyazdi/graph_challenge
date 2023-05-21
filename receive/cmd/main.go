@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"net"
-	"sync"
 )
 
 type Request struct {
@@ -17,69 +16,140 @@ type Response struct {
 }
 
 func main() {
+
+	dataChan := make(chan string, 10000)
+	/*
+
+		fmt.Println("main:started")
+
+		app := fiber.New()
+
+		app.Post("/endpoint", handleRequest)
+
+		log.Fatal(app.Listen(":8085"))
+	*/
+
 	app := fiber.New()
 
-	app.Post("/endpoint", handleRequest)
+	// Create a channel to receive data from the POST endpoint
 
-	log.Fatal(app.Listen(":8088"))
+	// Use a wait group to ensure all goroutines finish before shutting down
+	//var wg sync.WaitGroup
+
+	// Start a goroutine to send data from the channel to the socket
+	//wg.Add(1)
+
+	app.Post("/endpoint", func(c *fiber.Ctx) error {
+		body := c.Body()
+		dataChan <- string(body)
+		return c.Status(fiber.StatusOK).JSON("ok")
+	})
+
+	go func() {
+		address := "127.0.0.1:8088"
+		conn, err := net.Dial("tcp", address)
+		if err != nil {
+			log.Fatal("Failed to connect to the socket:", err)
+		}
+
+		defer conn.Close()
+		for payload := range dataChan {
+			_, err = conn.Write([]byte(payload))
+			if err != nil {
+				log.Printf("Failed to send payload: %v", err)
+				return
+			}
+		}
+
+	}()
+	// Define the endpoint to receive POST requests
+	//app.Post("/endpoint", func(c *fiber.Ctx) error {
+	//	// Read the body of the POST request
+	//	body := c.Body()
+	//	// Send the received data to the channel
+	//	dataChan <- body
+	//	// Respond with a success status
+	//	return c.SendString("Data received")
+	//})
+	//go func() {
+	//	if err := app.Listen(":8085"); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}()
+	log.Fatal(app.Listen(":8085"))
+
+	//address := "127.0.0.1:8088"
+	//conn, err := net.Dial("tcp", address)
+	//if err != nil {
+	//	log.Fatal("Failed to connect to the socket:", err)
+	//}
+	//defer conn.Close()
+
+	//go func() {
+	//	defer wg.Done()
+	//
+	//	for data := range dataChan {
+	//		// Send the received data to the socket
+	//		_, err := conn.Write([]byte(data))
+	//		if err != nil {
+	//			log.Println("Failed to send data to socket:", err)
+	//		} else {
+	//			log.Println("Data sent to socket successfully")
+	//		}
+	//	}
+	//
+	//}()
+	// Wait for all goroutines to finish before shutting down
+	//wg.Wait()
+
 }
 
 func handleRequest(c *fiber.Ctx) error {
+
 	// Parse the request JSON payload
 	//var req string
-	body := c.Body()
-	var wg sync.WaitGroup
-	numConnections := 10 // Number of concurrent connections to establish
-	wg.Add(numConnections)
+	//body := c.Body()
+	//dataChan <- string(body)
+	//fmt.Println("handleRequest:body", string(body))
+	//var wg sync.WaitGroup
+	//numConnections := 10 // Number of concurrent connections to establish
+	//wg.Add(numConnections)
 
-	for i := 0; i < numConnections; i++ {
+	//go func() {
+	//
+	//	err := sendData("127.0.0.1:8088", body)
+	//	if err != nil {
+	//		fmt.Println("Failed to send data:", err)
+	//	}
+	//}()
+
+	//for i := 0; i < numConnections; i++ {
+	/*
 		go func(payload []byte) {
-			defer wg.Done()
 
+			//defer wg.Done()
 			// Open a TCP socket connection to the other service
-			conn, err := net.Dial("tcp", "service-address:service-port") // Replace with the actual address and port of the other service
+			conn, err := net.Dial("tcp", "127.0.0.1:8088")
 			if err != nil {
 				log.Printf("Failed to open TCP connection: %v", err)
 				return
 			}
 			defer conn.Close()
-
 			// Send the payload to the other service
 			_, err = conn.Write(payload)
 			if err != nil {
 				log.Printf("Failed to send payload: %v", err)
 				return
 			}
+			//dataChan <- string(payload)
 
-			log.Println("Payload sent successfully")
+			//log.Println("Payload sent successfully")
 		}(body)
-	}
+		//}
+		//wg.Wait()
 
-	wg.Wait()
-	//if err != nil {
-	//	return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	//}
+	*/
 
-	// Create the response
-	//resp := Response{
-	//	Status:  "success",
-	//	Message: "Request processed successfully",
-	//}
-	//
-	//// Convert the response to JSON
-	//respJSON, err := json.Marshal(resp)
-	//if err != nil {
-	//	return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	//}
-	//
-	//// Send the request to another service using a socket connection
-	//err = sendRequestToService(string(respJSON))
-	//if err != nil {
-	//	return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	//}
-
-	// Send the response back
-	//fmt.Println(string(req))
 	return c.Status(fiber.StatusOK).JSON("ok")
 }
 
@@ -96,13 +166,6 @@ func sendRequestToService(data string) error {
 	if err != nil {
 		return err
 	}
-
-	// Read the response from the other service (if applicable)
-	// response := make([]byte, bufferSize)
-	// _, err = conn.Read(response)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

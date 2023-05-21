@@ -11,7 +11,7 @@ import (
 func main() {
 
 	numRequests := 10000
-	concurrency := 500 // Number of goroutines to run concurrently
+	concurrency := 200 // Number of goroutines to run concurrently
 	//requestsPerSecond := 10000
 
 	// Create a wait group to wait for all goroutines to finish
@@ -48,7 +48,7 @@ func main() {
 				fmt.Println("Error generating JSON payload:", err)
 			}
 			// Specify the URL of the POST endpoint
-			url := "http://127.0.0.1:8088/endpoint"
+			url := "http://127.0.0.1:8085/endpoint"
 			// Send the payload to the POST endpoint
 			err = service.MakeRequest(jsonPayload, url)
 			if err != nil {

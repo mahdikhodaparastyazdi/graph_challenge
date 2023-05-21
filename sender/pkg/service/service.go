@@ -3,30 +3,17 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"sync"
 )
 
-func MakeRequest(jsonPayload []byte, url string) error {
-	//_, err := http.Get(url) // Replace with your endpoint URL
-	//if err != nil {
-	//	return err
-	//}
-	////responseBody, err := ioutil.ReadAll(resp.Body)
-	////if err != nil {
-	////	fmt.Println("Error reading response body:", err)
-	////	return err
-	////}
-	////
-	////// Print the response status code and body
-	////fmt.Println("Response Status:", resp.Status)
-	////defer resp.Body.Close()
-	////fmt.Println("Response Body:", string(responseBody))
-	//// Do something with the response if needed
-	//return nil
+var mutex sync.Mutex
 
+func MakeRequest(jsonPayload []byte, url string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 	client := &http.Client{}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
@@ -41,8 +28,11 @@ func MakeRequest(jsonPayload []byte, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
-	re, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(re))
+	_, err1 := ioutil.ReadAll(resp.Body)
+	if err1 != nil {
+
+	}
+	//fmt.Println(string(re))
 	return nil
 
 }
