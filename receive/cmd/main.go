@@ -51,7 +51,11 @@ func main() {
 	//if err != nil {
 	//	log.Fatal("Failed to connect to the socket:", err)
 	//}
-
+	address := "127.0.0.1:8088"
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		log.Fatal("Failed to connect to the socket:", err)
+	}
 	go func() {
 		fmt.Println("start go func")
 		for payload := range dataChan {
@@ -62,7 +66,7 @@ func main() {
 				fmt.Println(num)
 				num++
 			}
-			go sendToSocket(payload)
+			go sendToSocket(payload, conn)
 			//_, err = conn.Write(payload)
 			//if err != nil {
 			//	log.Printf("Failed to send payload: %v", err)
@@ -114,15 +118,11 @@ func main() {
 func sendValue(body []byte, c chan []byte) {
 	c <- body
 }
-func sendToSocket(payload []byte) {
-	address := "127.0.0.1:8088"
-	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		log.Fatal("Failed to connect to the socket:", err)
-	}
+func sendToSocket(payload []byte, conn net.Conn) {
+
 	_, err1 := conn.Write(payload)
 	if err1 != nil {
-		log.Printf("Failed to send payload: %v", err)
+		log.Printf("Failed to send payload: %v", err1)
 
 	}
 }

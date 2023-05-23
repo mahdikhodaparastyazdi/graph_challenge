@@ -28,20 +28,47 @@ func startServer() {
 	var (
 		totalSize int64
 		count     int
-		mu        sync.Mutex
+		//mu        sync.Mutex
 	)
-
-	for {
+	var conn net.Conn
+	var number = 1
+	for number != 0 {
 		// Accept incoming connection
-		conn, err := listener.Accept()
+		conn, err = listener.Accept()
 		if err != nil {
 			log.Printf("Failed to accept connection: %v", err)
 			continue
 		}
-
+		number = 0
 		// Handle connection in a separate goroutine
-		go handleConnection(conn, &totalSize, &count, &mu)
+		//go handleConnection(conn, &totalSize, &count, &mu)
 	}
+	var numm = 1
+	for {
+		buffer := make([]byte, 100000) // Create a buffer to store the received data
+		n, err := conn.Read(buffer)
+		if err != nil {
+			//fmt.Println("Failed to read data:", err)
+			return
+		}
+
+		payload := buffer[:n]
+
+		fmt.Println("number:", numm, ": ", string(payload)[:10])
+		numm++
+		// Log the received payload
+		//log.Printf("Received payload: %s", payload)
+		//fmt.Println(string(payload))
+		// Update the total size and count
+		payloadSize := int64(len(payload))
+		//mu.Lock()
+		totalSize += payloadSize
+		count++
+		//mu.Unlock()
+
+		//log.Printf("Total Size: %d, Count: %d", totalSize, count)
+	}
+
 }
 
 func handleConnection(conn net.Conn, totalSize *int64, count *int, mu *sync.Mutex) {

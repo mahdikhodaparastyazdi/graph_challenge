@@ -15,7 +15,7 @@ func main() {
 }
 
 func startServer() {
-	dataChan := make(chan net.Conn)
+	dataChan := make(chan []byte)
 	// Listen for incoming connections
 	listener, err := net.Listen("tcp", "localhost:8088") // Replace with the desired listening address and port
 	if err != nil {
@@ -28,54 +28,61 @@ func startServer() {
 	// Handle connection in a separate goroutine
 	//go handleConnection(conn)
 	var num = 0
+	destConn, err := net.Dial("tcp", "127.0.0.1:8888")
+	if err != nil {
+		log.Printf("Failed to open TCP connection to destination: %v", err)
+		return
+	}
+
 	go func() {
-		buffer := make([]byte, 1000000)
-		for conn := range dataChan {
-
-			// Create a buffer to store the received data
-			n, err := conn.Read(buffer)
-			if err != nil {
-				fmt.Println("Failed to read data:", err)
-				conn.Close()
-				continue
-			}
-
-			payload := buffer[:n]
-			go sendToLog(payload)
+		for payload := range dataChan {
 			num++
+			go sendToLog(payload, num)
+
 			//// Log the received payload
 			//
 			////Open a TCP socket connection to another service
-			destConn, err := net.Dial("tcp", "127.0.0.1:8888")
-			if err != nil {
-				log.Printf("Failed to open TCP connection to destination: %v", err)
-				return
-			}
 
 			// Send the payload to the destination service
 			_, err = destConn.Write(payload)
 			if err != nil {
 				log.Printf("Failed to send payload to destination: %v", err)
-				return
+				continue
 			}
-			destConn.Close()
-			conn.Close()
 		}
-
+		destConn.Close()
 	}()
-	var nu = 0
-	for {
+	var conn net.Conn
+	var number = 1
+	buffer := make([]byte, 100000)
+	for number != 0 {
 		// Accept incoming connection
-		conn, err := listener.Accept()
+		conn, err = listener.Accept()
 		if err != nil {
 			log.Printf("Failed to accept connection: %v", err)
 			continue
 		}
-
-		dataChan <- conn
-
-		fmt.Println(nu)
+		number = 0
 	}
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Println("Error reading:", err)
+			break
+		}
+
+		// Process the received data
+		data := buffer[:n]
+		dataChan <- data
+		//fmt.Println("Received:", string(data)[:5])
+
+		// Example: Echo the received data back to the client
+		//conn.Write(data)
+
+	}
+
+	// Close the connection
+	conn.Close()
 }
 
 func handleConnection(conn net.Conn) {
@@ -118,6 +125,6 @@ func handleConnection(conn net.Conn) {
 
 	//	log.Println("Payload sent to destination successfully")
 }
-func sendToLog(payload []byte) {
-	log.Print(payload)
+func sendToLog(payload []byte, num int) {
+	log.Print(num)
 }
