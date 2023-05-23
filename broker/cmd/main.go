@@ -25,26 +25,32 @@ func startServer() {
 
 	log.Println("Server started, listening on", listener.Addr())
 
+	// Handle connection in a separate goroutine
+	//go handleConnection(conn)
+	var num = 0
 	go func() {
-		buffer := make([]byte, 4096)
+		buffer := make([]byte, 1000000)
 		for conn := range dataChan {
 
 			// Create a buffer to store the received data
 			n, err := conn.Read(buffer)
 			if err != nil {
-				//fmt.Println("Failed to read data:", err)
-				return
+				fmt.Println("Failed to read data:", err)
+				conn.Close()
+				continue
 			}
-			payload := buffer[:n]
-			// Log the received payload
 
-			//Open a TCP socket connection to another service
+			payload := buffer[:n]
+			go sendToLog(payload)
+			num++
+			//// Log the received payload
+			//
+			////Open a TCP socket connection to another service
 			destConn, err := net.Dial("tcp", "127.0.0.1:8888")
 			if err != nil {
 				log.Printf("Failed to open TCP connection to destination: %v", err)
 				return
 			}
-			defer destConn.Close()
 
 			// Send the payload to the destination service
 			_, err = destConn.Write(payload)
@@ -52,10 +58,12 @@ func startServer() {
 				log.Printf("Failed to send payload to destination: %v", err)
 				return
 			}
+			destConn.Close()
+			conn.Close()
 		}
 
 	}()
-
+	var nu = 0
 	for {
 		// Accept incoming connection
 		conn, err := listener.Accept()
@@ -64,9 +72,9 @@ func startServer() {
 			continue
 		}
 
-		// Handle connection in a separate goroutine
-		//go handleConnection(conn)
 		dataChan <- conn
+
+		fmt.Println(nu)
 	}
 }
 
@@ -109,4 +117,7 @@ func handleConnection(conn net.Conn) {
 	}
 
 	//	log.Println("Payload sent to destination successfully")
+}
+func sendToLog(payload []byte) {
+	log.Print(payload)
 }

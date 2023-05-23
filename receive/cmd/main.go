@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"net"
@@ -16,8 +17,7 @@ type Response struct {
 }
 
 func main() {
-
-	dataChan := make(chan string, 10000)
+	dataChan := make(chan []byte, 1000000)
 	/*
 
 		fmt.Println("main:started")
@@ -38,30 +38,39 @@ func main() {
 
 	// Start a goroutine to send data from the channel to the socket
 	//wg.Add(1)
-
 	app.Post("/endpoint", func(c *fiber.Ctx) error {
 		body := c.Body()
-		dataChan <- string(body)
-		return c.Status(fiber.StatusOK).JSON("ok")
+		go sendValue(body, dataChan)
+		//dataChan <- body
+		return c.Status(fiber.StatusOK).JSON("")
 	})
 
+	var num = 0
+	//address := "127.0.0.1:8088"
+	//conn, err := net.Dial("tcp", address)
+	//if err != nil {
+	//	log.Fatal("Failed to connect to the socket:", err)
+	//}
+
 	go func() {
-		address := "127.0.0.1:8088"
-		conn, err := net.Dial("tcp", address)
-		if err != nil {
-			log.Fatal("Failed to connect to the socket:", err)
-		}
-
-		defer conn.Close()
+		fmt.Println("start go func")
 		for payload := range dataChan {
-			_, err = conn.Write([]byte(payload))
-			if err != nil {
-				log.Printf("Failed to send payload: %v", err)
-				return
+			//if num == 190 {
+			//	close(dataChan)
+			//}
+			if payload != nil {
+				fmt.Println(num)
+				num++
 			}
+			go sendToSocket(payload)
+			//_, err = conn.Write(payload)
+			//if err != nil {
+			//	log.Printf("Failed to send payload: %v", err)
+			//	return
+			//}
 		}
-
 	}()
+	log.Fatal(app.Listen(":8085"))
 	// Define the endpoint to receive POST requests
 	//app.Post("/endpoint", func(c *fiber.Ctx) error {
 	//	// Read the body of the POST request
@@ -76,7 +85,6 @@ func main() {
 	//		log.Fatal(err)
 	//	}
 	//}()
-	log.Fatal(app.Listen(":8085"))
 
 	//address := "127.0.0.1:8088"
 	//conn, err := net.Dial("tcp", address)
@@ -102,6 +110,21 @@ func main() {
 	// Wait for all goroutines to finish before shutting down
 	//wg.Wait()
 
+}
+func sendValue(body []byte, c chan []byte) {
+	c <- body
+}
+func sendToSocket(payload []byte) {
+	address := "127.0.0.1:8088"
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		log.Fatal("Failed to connect to the socket:", err)
+	}
+	_, err1 := conn.Write(payload)
+	if err1 != nil {
+		log.Printf("Failed to send payload: %v", err)
+
+	}
 }
 
 func handleRequest(c *fiber.Ctx) error {

@@ -11,7 +11,7 @@ import (
 func main() {
 
 	numRequests := 10000
-	concurrency := 200 // Number of goroutines to run concurrently
+	concurrency := 400 // Number of goroutines to run concurrently
 	//requestsPerSecond := 10000
 
 	// Create a wait group to wait for all goroutines to finish
@@ -25,7 +25,7 @@ func main() {
 
 	// Start the goroutines
 	rand.Seed(time.Now().UnixNano())
-	sizeInBytes := rand.Intn(3950) + 50
+	sizeInBytes := rand.Intn(7950) + 50
 
 	// Generate the JSON payload
 	jsonPayload, err := service.GenerateJSONPayload(sizeInBytes)

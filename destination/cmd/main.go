@@ -67,7 +67,7 @@ func handleConnection(conn net.Conn, totalSize *int64, count *int, mu *sync.Mute
 	payload := buffer[:n]
 	// Log the received payload
 	//log.Printf("Received payload: %s", payload)
-
+	//fmt.Println(string(payload))
 	// Update the total size and count
 	payloadSize := int64(len(payload))
 	mu.Lock()
@@ -76,8 +76,4 @@ func handleConnection(conn net.Conn, totalSize *int64, count *int, mu *sync.Mute
 	mu.Unlock()
 
 	log.Printf("Total Size: %d, Count: %d", *totalSize, *count)
-	if *count > 10100 {
-		*totalSize = 0
-		*count = 0
-	}
 }
